@@ -18,10 +18,10 @@ Videos: [YouTube playlist](https://www.youtube.com/playlist?list=PLsyTdiI7kVn8H8
 Firmware
 --------
 To use Jtagulator-ID-Tracker:
-1.Use Parallax Propeller Tool (1.3.2) flash the eeprom_update firmware into Jtagulator.
-2.Observe the serial port until the database burning is complete.
-3.flash the Jtagulator-ID-Tracker fireware.
-4.After you find any ID,use "D" instruction to get the chip manufacturer name.
++ 1.Use Parallax Propeller Tool (1.3.2) flash the eeprom_update firmware into Jtagulator.
++ 2.Observe the serial port until the database burning is complete.
++ 3.flash the Jtagulator-ID-Tracker fireware.
++ 4.After you find any ID,use "D" instruction to get the chip manufacturer name.
 *Note: Once the EEPROM_UPDATE firmware has been fully executed, switching Jtagulator firmware will not affect the internal manufacturer database.*
 *Note: This is a development repository. Interim commits may be unstable.*
 
