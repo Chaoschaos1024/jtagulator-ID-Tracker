@@ -85,7 +85,7 @@ CON
   EEPROM_TCK_OFFSET             = 16
   EEPROM_TMS_OFFSET             = 20
 
-  Manufacturer_begin_address    =$8020
+  Manufacturer_begin_address    =$8080
   Manufacturer_name_length      =16
 
 
@@ -151,7 +151,6 @@ OBJ
   swd           : "PropSWD"                ' ARM SWD (Serial Wire Debug) low-level functions (Adam Green, https://github.com/adamgreen)
   sump          : "PropSUMP"               ' OLS/SUMP protocol for logic analyzer mode
   ocd           : "PropOCD"                ' OpenOCD binary protocol
-  'id            : "IDComparison"           ' Compare ID
 
 
 PUB main | cmd
@@ -574,7 +573,7 @@ PRI IDCODE_Scan(type) | value, value_new, ctr, num, id[32 {jtag#MAX_DEVICES_LEN}
             ' Since we might not know how many devices are in the chain, try the maximum allowable number and verify the results afterwards
             jtag.Get_Device_IDs(jtag#MAX_DEVICES_LEN, @id)   ' We assume the IDCODE is the default DR after reset
             repeat i from 0 to (jtag#MAX_DEVICES_LEN-1)      ' For each device in the chain...
-              Display_Device_ID(id[i], i + 1, 1)               ' Display Device ID of current device (without details)
+              Display_Device_ID(id[i], i + 1, 0,1)               ' Display Device ID of current device (without details)
           else              ' Combined IDCODE Scan and BYPASS Scan
             ' Now try to determine TDI by doing a BYPASS Test
             repeat jTDI from chStart to chEnd     ' For every remaining channel...
@@ -624,7 +623,7 @@ PRI IDCODE_Scan(type) | value, value_new, ctr, num, id[32 {jtag#MAX_DEVICES_LEN}
 
                 jtag.Get_Device_IDs(value, @id)   ' We assume the IDCODE is the default DR after reset
                 repeat i from 0 to (value-1)      ' For each device in the chain...
-                  Display_Device_ID(id[i], i + 1, 1)       ' Display Device ID of current device (with details)
+                  Display_Device_ID(id[i], i + 1, 0,1)       ' Display Device ID of current device (with details)
 
                 quit                              ' Break out of the search for TDI and continue...
               else
@@ -997,7 +996,7 @@ PRI IDCODE_Known | id[32 {jtag#MAX_DEVICES_LEN}], i, xtdi   ' Get JTAG Device ID
   jtag.Get_Device_IDs(jtag#MAX_DEVICES_LEN, @id)   ' We assume the IDCODE is the default DR after reset
 
   repeat i from 0 to (jtag#MAX_DEVICES_LEN-1)      ' For each device in the chain...
-    Display_Device_ID(id[i], i + 1, 1)               ' Display Device ID of current device (with details)
+    Display_Device_ID(id[i], i + 1, 1,1)               ' Display Device ID of current device (with details)
 
   if (i == 0)
     pst.Str(@ErrNoDeviceFound)
@@ -1511,46 +1510,65 @@ PRI Display_JTAG_IRDR(irLen, opcode, drLen)    ' Display IR/DR information
   pst.Str(String(" -> DR: "))
   pst.Dec(drLen)
   pst.Str(String(CR, LF))
-
-
-PRI Display_Device_ID(value, num, details)
+PRI Display_Device_ID(value, num, details,jtagorswd) | temp_details
+  temp_details := details
   if (value == -1) or (value & $00000001 <> 1)   ' Ignore if Device ID is 0xFFFFFFFF or if bit 0 != 1
     return
 
-  if (details == 1)
+  if (details >= 1)
     pst.Str(String(CR, LF, LF))
 
   pst.Str(String("Device ID #"))
   pst.Dec(num)
   pst.Str(String(": "))
+  if(jtagorswd==1)
+        {{ IEEE Std. 1149.1 2001
+       Device Identification Register
 
-  ' Display value as binary characters (0/1) based on IEEE Std. 1149.1 2001 Device Identification Register structure
-  {{ IEEE Std. 1149.1 2001
-     Device Identification Register
-
-     MSB                                                                          LSB
-     +-----------+----------------------+---------------------------+--------------+
-     |  Version  |      Part Number     |   Manufacturer Identity   |   Fixed (1)  |
-     +-----------+----------------------+---------------------------+--------------+
-        31...28          27...12                  11...1                   0
-  }}
-  pst.Bin(Get_Bit_Field(value, 31, 28), 4)      ' Version
-  pst.Char(" ")
-  pst.Bin(Get_Bit_Field(value, 27, 12), 16)     ' Part Number
-  pst.Char(" ")
-  pst.Bin(Get_Bit_Field(value, 11, 1), 11)      ' Manufacturer Identity
-  pst.Char(" ")
-  pst.Bin(Get_Bit_Field(value, 0, 0), 1)        ' Fixed (should always be 1)
-
+      MSB                                                                          LSB
+      +-----------+----------------------+---------------------------+--------------+
+      |  Version  |      Part Number     |   Manufacturer Identity   |   Fixed (1)  |
+      +-----------+----------------------+---------------------------+--------------+
+          31...28          27...12                  11...1                   0
+    }}
+    pst.Bin(Get_Bit_Field(value, 31, 28), 4)      ' Version
+    pst.Char(" ")
+    pst.Bin(Get_Bit_Field(value, 27, 12), 16)     ' Part Number
+    pst.Char(" ")
+    pst.Bin(Get_Bit_Field(value, 11, 1), 11)      ' Manufacturer Identity
+    pst.Char(" ")
+    pst.Bin(Get_Bit_Field(value, 0, 0), 1)        ' Fixed (should always be 1)
   ' ...as hexadecimal
-  pst.Str(String(" (0x"))
-  pst.Hex(value, 8)
-  pst.Str(String(")"))
-
-  if (details == 1)
+    pst.Str(String(" (0x"))
+    pst.Hex(value, 8)
+    pst.Str(String(")"))
+  else
+    {{ JEP106
+       Debug Port Identification Register
+       
+      MSB                                                                          LSB
+      +-----------+-------------+--------+---+-------------+------------------+-----+
+      |  REVISION |    PARTNO   |  RES0  |MIN|   VERISON   |     DESIGNER     | RAO |
+      +-----------+-------------+--------+---+-------------+------------------+-----+
+          31...28      27...20    19..17   16    15...12           11...1        0
+    }}
+    pst.Bin(Get_Bit_Field(value, 31, 28), 4)            'Revision
+    pst.Char(" ")
+    pst.Bin(Get_Bit_Field(value, 27, 20), 8)            'PartNo
+    pst.Char(" ")
+    pst.Bin(Get_Bit_Field(value, 19, 17), 3)            'RES0
+    pst.Char(" ")
+    pst.Bin(Get_Bit_Field(value, 15, 12), 4)            'Verison
+    pst.Char(" ")
+    pst.Bin(Get_Bit_Field(value, 11, 1), 11)            'Designer
+    pst.Char(" ")                                                                            
+    pst.Bin(Get_Bit_Field(value, 0, 0), 1)              'RA0
+  ' ...as hexadecimal
+    pst.Str(String(" (0x"))
+    pst.Hex(value, 8)
+    pst.Str(String(")"))
+  if (temp_details == 1)
     ' JTAG MODE
-    ' Extended decoding
-    ' Not all vendors use these fields as specified
     pst.Str(String(CR, LF, "-> Manufacturer ID: 0x"))
     pst.Hex(Get_Bit_Field(value, 11, 1), 3)
     report_manufacturer_name(Get_Bit_Field(value, 11, 1)) 
@@ -1558,19 +1576,23 @@ PRI Display_Device_ID(value, num, details)
     pst.Hex(Get_Bit_Field(value, 27, 12), 4)
     pst.Str(String(CR, LF, "-> Version: 0x"))
     pst.Hex(Get_Bit_Field(value, 31, 28), 1)
-  elseif(details==2)
+  elseif(temp_details == 2)
     'SWD MODE
-    pst.Str(String(CR, LF, "-> DESIGNER: 0x"))
+    pst.Str(String(CR, LF, "-> DPIDR: 0x"))
+    pst.Hex(value, 8)
+    pst.Str(String(CR, LF, "-> Designer: 0x"))
     pst.Hex(Get_Bit_Field(value, 11, 1), 3)
-    pst.Str(String(CR, LF, "-> PARTNO: 0x"))
-    pst.Hex(Get_Bit_Field(value, 27, 12), 4)
-    pst.Str(String(CR, LF, "-> Version: 0x"))
-    pst.Hex(Get_Bit_Field(value, 31, 28), 1)
-
+    report_manufacturer_name(Get_Bit_Field(value, 11, 8)*126+Get_Bit_Field(value, 7, 1))
+    pst.Str(String(CR, LF, "-> Revision: 0x"))
+    pst.Hex(Get_Bit_Field(value, 31, 28), 1) 
+    pst.Str(String(CR, LF, "-> Part Num: 0x"))
+    pst.Hex(Get_Bit_Field(value, 27, 20), 2)
+    pst.Str(String(CR, LF, "-> ADI Version: v5."))
+    pst.Dec((Get_Bit_Field(value, 15, 12)-1))
+  else
   pst.Str(String(CR, LF))
-
 PRI report_manufacturer_name(manufacturer_address)  |  manufacturer_name
-    pst.Str(String(CR, LF, "-> Manufacturer Name: "))
+    pst.Str(String(CR, LF, "-> Manufacturer : "))
     readLong(Manufacturer_begin_address+ manufacturer_address * manufacturer_name_length - 16, @manufacturer_name)
     pst.Str(@manufacturer_name)
     readLong(Manufacturer_begin_address+ manufacturer_address * manufacturer_name_length -12, @manufacturer_name)
@@ -2370,7 +2392,7 @@ PRI SWD_IDCODE_Scan | response, idcode, ctr, num, xclk, xio     ' Identify SWD p
         num++
         xclk := swdClk
         xio := swdIo
-        Display_Device_ID(idcode, 1, 0)     ' SWD doesn't support device chaining, so there will only be a single device per pin permutation
+        Display_Device_ID(idcode, 1, 0,0)     ' SWD doesn't support device chaining, so there will only be a single device per pin permutation
         pst.Str(String(CR, LF))
             
       ' Progress indicator
@@ -2409,7 +2431,7 @@ PRI SWD_IDCODE_Known | response, idcode   ' Get SWD Device ID (Pinout already kn
   ' the response code is OK (%001) and the least significant bit of the returned
   ' IDCODE is 1 (unless all bits of IDCODE are 1 which isn't valid).
   if (response == swd#RESP_OK) and (idcode <> -1) and (idcode & 1)
-    Display_Device_ID(idcode, 1, 0)   ' Display Device ID (with details)
+    Display_Device_ID(idcode, 1, 2,0)   ' Display Device ID (with details)
   else
     pst.Str(@ErrNoDeviceFound)
 
@@ -2813,13 +2835,14 @@ InitHeader    byte CR, LF, LF
               byte "  JJJ  TTTT AAA   AA GGGGGGGGG UUUUUUUU LLLLLLLLL AAA  TTT OOOOOOOOO  RRR RRR", CR, LF
               byte "  JJJ  TT                  GGG             AAA                         RR RRR", CR, LF
               byte " JJJ                        GG             AA                              RRR", CR, LF
-              byte "JJJ                          G             A                                 RR", CR, LF, LF, LF
+              byte "JJJ                          G             A                                 RR", CR, LF, LF, LF   
               byte "           Welcome to JTAGulator. Press 'H' for available commands.", CR, LF
               byte "         Warning: Use of this tool may affect target system behavior!", 0
 
 VersionInfo   byte CR, LF, "JTAGulator FW ID Tracker 1.2", CR, LF
               byte "Designed by Joe Grand, Grand Idea Studio, Inc.", CR, LF
-              byte "Modified by Weiao, 2025.6.20", CR, LF 
+              byte "Modified by Weiao, 2025.10.30", CR, LF 
+              byte "Modified by Weiao, 2025.10.30", CR, LF
               byte "Main: jtagulator.com", CR, LF
               byte "Source: github.com/grandideastudio/jtagulator", 0
 

@@ -1,10 +1,19 @@
-JTAGulator Change Log
+JTAGulator ID Tracker Change Log
 =====================
 
 Visit the JTAGulator [GitHub repository](https://github.com/grandideastudio/jtagulator/commits/master) for full commit comments.
 
+<a id="v1_12"></a>ID Tracker 1.0
+----
 
-<a id="v1_12"></a>ID Tracker
+Release date: **October 30, 2025**
+
+* General: To use this firmware normally, you need to first flash the eeprom_update firmware. After flashing, observe the output in the serial port software. After the database is written normally, you can flash the Jtagulator-ID-tracker firmware, and then you can use it normally.
+* General: Enhance the ability to use jtag idcode to identify the manufacturer
+* General: Added the ability to use swd DPIDR to identify the manufacturer
+
+
+<a id="v1_12"></a>ID Tracker 0.9
 ----
 
 Release date: **July 5, 2025**
