@@ -1,3 +1,21 @@
+{
+ ************************************************************************************************************
+ *                                                                                                          *
+ *  AUTO-RECOVER NOTICE: This file was automatically recovered from an earlier Propeller Tool session.      *
+ *                                                                                                          *
+ *  ORIGINAL FOLDER:     D:\desktop\Open_Source\Jtagylator\jit\jtagulator-ID-Tracker\                       *
+ *  TIME AUTO-SAVED:     21 hours, 57 minutes ago (2025/11/30 10:22:58)                                     *
+ *                                                                                                          *
+ *  OPTIONS:             1)  RESTORE THIS FILE by deleting these comments and selecting File -> Save.       *
+ *                           The existing file in the original folder will be replaced by this one.         *
+ *                                                                                                          *
+ *                           -- OR --                                                                       *
+ *                                                                                                          *
+ *                       2)  IGNORE THIS FILE by closing it without saving.                                 *
+ *                           This file will be discarded and the original will be left intact.              *
+ *                                                                                                          *
+ ************************************************************************************************************
+.}
 {{
 +-------------------------------------------------+
 | JTAGulator                                      |
@@ -2842,7 +2860,6 @@ InitHeader    byte CR, LF, LF
 VersionInfo   byte CR, LF, "JTAGulator FW ID Tracker 1.2", CR, LF
               byte "Designed by Joe Grand, Grand Idea Studio, Inc.", CR, LF
               byte "Modified by Weiao, 2025.10.30", CR, LF 
-              byte "Modified by Weiao, 2025.10.30", CR, LF
               byte "Main: jtagulator.com", CR, LF
               byte "Source: github.com/grandideastudio/jtagulator", 0
 
